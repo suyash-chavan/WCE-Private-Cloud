@@ -1,0 +1,8 @@
+streamlit
+pillow
+python-dotenv
+streamlit-option-menu
+openstacksdk
+mongoengine
+python-dotenv
+htbuilder

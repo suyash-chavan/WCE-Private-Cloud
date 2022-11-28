@@ -1,10 +1,14 @@
 import ui.login
 import ui.dashboard
 import api.moodle
+import api.openstack
 import streamlit
 import os
 from mongoengine import *
 from dotenv import load_dotenv
+import openstack
+import openstack.config.loader
+import openstack.compute.v2.server
 
 load_dotenv()
 
@@ -32,6 +36,10 @@ hide_menu_style = """
                     </style>
                     """
 streamlit.markdown(hide_menu_style, unsafe_allow_html=True)
+
+# List the servers
+# for server in openstack.compute.v2.server.Server.list(session=api.openstack.conn.compute):
+#     streamlit.write(server.to_dict())
 
 if "token" not in streamlit.session_state:
     streamlit.session_state.token = ""

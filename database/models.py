@@ -1,8 +1,5 @@
 from mongoengine import *
 
-class SSHKey(Document):
-    key = StringField()
-
 class Image(Document):
     imageId = StringField(unique=True)
     imageName = StringField(unique=True)
@@ -19,7 +16,6 @@ class Instance(Document):
     instanceRam = IntField()
     instanceCreated = DateTimeField()
     instanceDeleted = DateTimeField()
-    sshKey = ReferenceField(SSHKey)
     meta = {"allow_inheritance": True}
 
 class User(Document):
@@ -27,4 +23,5 @@ class User(Document):
     maxRam = IntField(default=4096)
     maxInstances = IntField(default=2)
     instances = ListField(default=[])
+    sshKey = StringField()
     meta = {"allow_inheritance": True}

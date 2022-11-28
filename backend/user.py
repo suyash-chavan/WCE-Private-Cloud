@@ -56,3 +56,32 @@ def createInstance(instanceName, instanceType, instanceRam):
             return False
     else:
         return False
+
+
+def getKey():
+    user = database.models.User.objects(
+        moodleId=streamlit.session_state.data["moodleId"]
+    ).first()
+    
+    return user.sshKey
+
+def setKey(privateKey):
+    user = database.models.User.objects(
+        moodleId=streamlit.session_state.data["moodleId"]
+    ).first()
+
+    user.sshKey = privateKey
+    user.save()
+
+def deleteInstance(instanceName):
+    instance = database.models.Instance.objects(
+        instanceName=instanceName
+    ).first()
+
+    user = database.models.User.objects(
+        moodleId=streamlit.session_state.data["moodleId"]
+    ).first()
+
+    user.instances.remove(instance)
+    user.save()
+    instance.delete()

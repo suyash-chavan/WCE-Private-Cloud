@@ -16,6 +16,7 @@ class Instance(Document):
     instanceRam = IntField()
     instanceCreated = DateTimeField()
     instanceDeleted = DateTimeField()
+    instanceIp = StringField()
     meta = {"allow_inheritance": True}
 
 class User(Document):

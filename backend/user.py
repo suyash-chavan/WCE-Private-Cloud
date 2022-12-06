@@ -28,7 +28,7 @@ def getInstances():
 
     return user.instances
 
-def createInstance(instanceName, instanceType, instanceRam):
+def createInstance(instanceName, instanceType, instanceRam, instanceIp):
     user = database.models.User.objects(
         moodleId=streamlit.session_state.data["moodleId"]
     ).first()
@@ -41,6 +41,7 @@ def createInstance(instanceName, instanceType, instanceRam):
                     instanceName=instanceName,
                     instanceType=instanceType,
                     instanceRam=instanceRam,
+                    instanceIp=instanceIp
                 )
 
                 newInstance.save()

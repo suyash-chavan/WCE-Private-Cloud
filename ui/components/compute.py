@@ -39,13 +39,14 @@ def viewInstances():
 
     streamlit.header("Instances")
 
-    cols = streamlit.columns([0.2,0.8,0.8,0.8,1])
+    cols = streamlit.columns([0.2,0.8,0.8,0.8,1,1])
 
     cols[0].write("**Sr. No.**")
     cols[1].write("**Name**")
     cols[2].write("**Details**")
     cols[3].write("**Status**")
-    cols[4].write("**Actions**")
+    cols[4].write("**Private IP**")
+    cols[5].write("**Actions**")
 
     serial = 1
 
@@ -54,14 +55,15 @@ def viewInstances():
         server = conn.compute.find_server(instance.instanceName)
 
         s_serial = str(serial)
-        cols = streamlit.columns([0.2,0.8,0.8,0.8,0.33,0.33,0.33])
+        cols = streamlit.columns([0.2,0.8,0.8,0.8,1,0.33,0.33,0.33])
         cols[0].write(s_serial)
         cols[1].write(instance.instanceName)
         cols[2].write(instance.instanceType + " - " + str(instance.instanceRam)+"MB")
 
         cols[3].write(server.status)
+        cols[4].write(server.addresses["External"][0]["addr"])
 
-        cols[4].download_button(
+        cols[5].download_button(
             label = 'Private Key', 
             data = str(privateKey), 
             file_name = "private_key.pem",
@@ -69,8 +71,8 @@ def viewInstances():
             key = s_serial+"download"
         )
 
-        connect = cols[5].button("Connect",key = s_serial+"connect")
-        delete = cols[6].button("Delete",key = s_serial+"delete")
+        connect = cols[6].button("Connect",key = s_serial+"connect")
+        delete = cols[7].button("Delete",key = s_serial+"delete")
 
         if delete:
             deleteInstance(instance.instanceName)
@@ -125,7 +127,7 @@ def createInstance():
         server = conn.compute.wait_for_server(server)
         conn.add_auto_ip(server)
 
-        created = backend.user.createInstance(SERVER_NAME, IMAGE_NAME, ram[instanceRam])
+        created = backend.user.createInstance(SERVER_NAME, IMAGE_NAME, ram[instanceRam], str(server.addresses["External"][0]["addr"]))
 
         if created:
             streamlit.balloons()

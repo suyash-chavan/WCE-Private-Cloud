@@ -28,7 +28,7 @@ def getInstances():
 
     return user.instances
 
-def createInstance(instanceName, instanceType, instanceRam, instanceIp):
+def createInstance(instanceName, instanceRam, instanceType):
     user = database.models.User.objects(
         moodleId=streamlit.session_state.data["moodleId"]
     ).first()
@@ -39,9 +39,7 @@ def createInstance(instanceName, instanceType, instanceRam, instanceIp):
                 newInstance = database.models.Instance(
                     instanceId=streamlit.session_state.data["moodleId"],
                     instanceName=instanceName,
-                    instanceType=instanceType,
-                    instanceRam=instanceRam,
-                    instanceIp=instanceIp
+                    instanceType=instanceType
                 )
 
                 newInstance.save()
@@ -86,3 +84,24 @@ def deleteInstance(instanceName):
     user.instances.remove(instance)
     user.save()
     instance.delete()
+
+def addPort(instanceName, sPort, dPort):
+    
+    instance = database.models.Instance.objects(
+        instanceName=instanceName
+    ).first()
+
+    instance.instancePorts[str(dPort)] = sPort
+    instance.save()
+        
+def deletePort(sPort):
+    instance = database.models.Instance.objects(
+        instanceName=instanceName
+    ).first()
+
+    for port in instance.instancePorts.keys():
+        if instance.instancePorts[port]==sPort:
+            del instance.instancePorts[port]
+            break
+
+    instance.save()

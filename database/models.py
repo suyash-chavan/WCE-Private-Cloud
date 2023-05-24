@@ -17,6 +17,7 @@ class Instance(Document):
     instanceCreated = DateTimeField()
     instanceDeleted = DateTimeField()
     instanceIp = StringField()
+    instancePorts = DictField(default={})
     meta = {"allow_inheritance": True}
 
 class User(Document):

@@ -1,8 +1,11 @@
 import streamlit
 import backend.user
 from api.openstack import conn
+import api.proxy
 import backend.user
 from streamlit_option_menu import option_menu
+import socket
+import os
 
 def getPrivateKey():
     privateKey = backend.user.getKey()
@@ -39,14 +42,14 @@ def viewInstances():
 
     streamlit.header("Instances")
 
-    cols = streamlit.columns([0.2,0.8,0.8,0.8,1,1])
+    cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5,0.5,0.5])
 
     cols[0].write("**Sr. No.**")
     cols[1].write("**Name**")
     cols[2].write("**Details**")
     cols[3].write("**Status**")
-    cols[4].write("**Private IP**")
-    cols[5].write("**Actions**")
+    cols[4].write("**Public Access**")
+    cols[6].write("**Actions**")
 
     serial = 1
 
@@ -55,13 +58,15 @@ def viewInstances():
         server = conn.compute.find_server(instance.instanceName)
 
         s_serial = str(serial)
-        cols = streamlit.columns([0.2,0.8,0.8,0.8,1,0.33,0.33,0.33])
+        cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5,0.5,0.5])
         cols[0].write(s_serial)
         cols[1].write(instance.instanceName)
-        cols[2].write(instance.instanceType + " - " + str(instance.instanceRam)+"MB")
+        cols[2].write(instance.instanceType + " - " + str(server.flavor.ram)+"MB")
 
         cols[3].write(server.status)
-        cols[4].write(server.addresses["External"][0]["addr"])
+
+        for port in instance.instancePorts:
+            cols[4].write("{}:{}->{}".format(os.getenv("PROXY_IP"), instance.instancePorts[port], port))
 
         cols[5].download_button(
             label = 'Private Key', 
@@ -71,7 +76,20 @@ def viewInstances():
             key = s_serial+"download"
         )
 
-        connect = cols[6].button("Connect",key = s_serial+"connect")
+        if len(instance.instancePorts)<3:
+            dPort = cols[6].number_input(label="Add Port", step=1, key = s_serial+"ports", label_visibility="collapsed", format="%d", value=22)
+            openPort = cols[6].button("Open Port",key = s_serial+"openPort")
+
+            if openPort:
+                if str(dPort) not in instance.instancePorts.keys():
+                    resPort = api.proxy.setPort(server.addresses["internal"][1]["addr"], dPort)
+                    if resPort != -1:
+                        backend.user.addPort(instance.instanceName, resPort, dPort)
+                    else:
+                        cols[6].warning("Something went wrong!")
+        else:
+            cols[6].warning("Limit exceeded!")
+
         delete = cols[7].button("Delete",key = s_serial+"delete")
 
         if delete:
@@ -84,15 +102,11 @@ def createInstance():
     images = []
     
     flavours = {
-        "512MB": "gp1.nano",
-        "1GB": "gp1.micro",
-        "2GB": "c1.micro",
-        "4GB": "c1.small",
+        "2GB": "m1.small",
+        "4GB": "m1.medium",
     }
 
     ram = {
-        "512MB": 512,
-        "1GB": 1024,
         "2GB": 2048,
         "4GB": 4096,
     }
@@ -114,28 +128,33 @@ def createInstance():
     if create:
         SERVER_NAME = str(streamlit.session_state.data["moodleId"]) + "-" + SERVER_NAME
         FLAVOR_NAME = flavours[instanceRam]
-        NETWORK_NAME = "External"
+        NETWORK_NAME = "internal"
 
         image = conn.compute.find_image(IMAGE_NAME)
         flavor = conn.compute.find_flavor(FLAVOR_NAME)
         network = conn.network.find_network(NETWORK_NAME)
 
-        server = conn.compute.create_server(
-            name=SERVER_NAME, image_id=image.id, flavor_id=flavor.id,
-            networks=[{"uuid": network.id}], key_name=str(streamlit.session_state.data["moodleId"]))
+        if backend.user.createInstance(SERVER_NAME, ram[instanceRam], IMAGE_NAME):
 
-        server = conn.compute.wait_for_server(server)
-        conn.add_auto_ip(server)
+            server = conn.compute.create_server(
+                name=SERVER_NAME, image_id=image.id, flavor_id=flavor.id,
+                networks=[{"uuid": network.id}], key_name=str(streamlit.session_state.data["moodleId"]), auto_ip=True)
 
-        created = backend.user.createInstance(SERVER_NAME, IMAGE_NAME, ram[instanceRam], str(server.addresses["External"][0]["addr"]))
+            server = conn.compute.wait_for_server(server)
+            conn.add_auto_ip(server)
 
-        if created:
-            streamlit.balloons()
-            streamlit.success("Instance created successfully")
+            if server.status=="ACTIVE":
+                streamlit.balloons()
+                streamlit.success("Instance created successfully")
+                return 
+            else:
+                streamlit.error("Something went wrong!")
         else:
-            streamlit.error("Something went wrong")
-
-
+            streamlit.error("Please check account limits")
+        try:
+            backend.user.deleteInstance(SERVER_NAME)
+        except Exception as e: 
+            pass
 
 def computeDashboard():
     subOption = option_menu(

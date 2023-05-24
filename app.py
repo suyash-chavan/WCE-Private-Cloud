@@ -14,9 +14,6 @@ load_dotenv()
 
 connect(
     os.getenv("MONGO_DATABASE"),
-    username=os.getenv("MONGO_USER"),
-    password=os.getenv("MONGO_PASS"),
-    authentication_source="admin",
     host=os.getenv("MONGO_HOST"),
     port=27017,
 )

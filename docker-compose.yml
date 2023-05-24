@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  cloud-console:
+    build: .
+    container_name: cloud-console
+    restart: always
+    links:
+      - mongo-db
+    ports:
+      - "8501:8501"
+
+  mongo-db:
+    image: "mongo:latest"
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - "~/mongo/data:/data/db"

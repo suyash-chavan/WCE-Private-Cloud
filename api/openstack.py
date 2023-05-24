@@ -6,4 +6,4 @@ import openstack.compute.v2.server
 openstack.enable_logging(debug=True)
 
 # Initialize connection
-conn = openstack.connect(cloud='openmetal')
+conn = openstack.connect(cloud='openstack')

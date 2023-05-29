@@ -1,0 +1,15 @@
+clouds:
+  openstack:
+    insecure: True
+    verify: False
+    auth:
+      username: "admin"
+      password: "zE54smGpZRHbTyBx1sN7AuLxRBpgibMY"
+      project_name: "admin"
+      user_domain_name: "Default"
+      project_domain_name: "Default"
+      auth_url: "https://10.7.3.162:5000/v3/"
+    region_name: "microstack"
+    interface: "public"
+    identity_api_version: 3
+    auth_type: "password"

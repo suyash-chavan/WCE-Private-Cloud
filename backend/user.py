@@ -94,7 +94,7 @@ def addPort(instanceName, sPort, dPort):
     instance.instancePorts[str(dPort)] = sPort
     instance.save()
         
-def deletePort(sPort):
+def deletePort(instanceName, sPort):
     instance = database.models.Instance.objects(
         instanceName=instanceName
     ).first()

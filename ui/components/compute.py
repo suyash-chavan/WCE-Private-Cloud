@@ -42,14 +42,14 @@ def viewInstances():
 
     streamlit.header("Instances")
 
-    cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5,0.5,0.5])
+    cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5])
 
     cols[0].write("**Sr. No.**")
     cols[1].write("**Name**")
     cols[2].write("**Details**")
     cols[3].write("**Status**")
     cols[4].write("**Public Access**")
-    cols[6].write("**Actions**")
+    cols[5].write("**Actions**")
 
     serial = 1
 
@@ -58,43 +58,54 @@ def viewInstances():
         server = conn.compute.find_server(instance.instanceName)
 
         s_serial = str(serial)
-        cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5,0.5,0.5])
+        cols = streamlit.columns([0.2,0.8,0.8,0.5,0.8,0.5])
         cols[0].write(s_serial)
         cols[1].write(instance.instanceName)
         cols[2].write(instance.instanceType + " - " + str(server.flavor.ram)+"MB")
 
         cols[3].write(server.status)
 
-        for port in instance.instancePorts:
-            cols[4].write("{}:{}->{}".format(os.getenv("PROXY_IP"), instance.instancePorts[port], port))
-
-        cols[5].download_button(
-            label = 'Private Key', 
-            data = str(privateKey), 
-            file_name = "private_key.pem",
-            mime='text/csv', 
-            key = s_serial+"download"
-        )
-
         if len(instance.instancePorts)<3:
-            dPort = cols[6].number_input(label="Add Port", step=1, key = s_serial+"ports", label_visibility="collapsed", format="%d", value=22)
-            openPort = cols[6].button("Open Port",key = s_serial+"openPort")
+            dPort = cols[4].number_input(label="Add Port", step=1, key = s_serial+"ports", label_visibility="collapsed", format="%d", value=22)
+            associate = cols[4].button("Associate",key = s_serial+"associate", use_container_width=True)
 
-            if openPort:
+            if associate:
                 if str(dPort) not in instance.instancePorts.keys():
-                    resPort = api.proxy.setPort(server.addresses["internal"][1]["addr"], dPort)
+                    resPort = api.proxy.setPort(server.addresses["test"][1]["addr"], dPort)
                     if resPort != -1:
                         backend.user.addPort(instance.instanceName, resPort, dPort)
+                        streamlit.experimental_rerun()
                     else:
                         cols[6].warning("Something went wrong!")
         else:
-            cols[6].warning("Limit exceeded!")
+            cols[4].warning("Limit exceeded!")
 
-        delete = cols[7].button("Delete",key = s_serial+"delete")
+        for port in instance.instancePorts:
+            deletePort = cols[4].button("{}:{} -> {}".format(os.getenv("PROXY_IP"), instance.instancePorts[port], port), type="primary", use_container_width=True)
+
+            if deletePort:
+                api.proxy.deletePort(instance.instancePorts[port])
+                backend.user.deletePort(instance.instanceName, instance.instancePorts[port])
+                streamlit.experimental_rerun()
+
+        connect = cols[5].button("Connect",key = s_serial+"connect", use_container_width=True)
+
+        cols[5].download_button(
+            label = 'Download Key', 
+            data = str(privateKey), 
+            file_name = "private_key.pem", 
+            mime='text/csv', 
+            key = s_serial+"download",
+            use_container_width=True
+        )
+
+        delete = cols[5].button("Delete",key = s_serial+"delete", type="primary", use_container_width=True)
 
         if delete:
+            for port in instance.instancePorts.keys():
+                api.proxy.deletePort(instance.instancePorts[port])
             deleteInstance(instance.instanceName)
-
+            streamlit.experimental_rerun()
         serial+=1
 
 def createInstance():
@@ -128,17 +139,17 @@ def createInstance():
     if create:
         SERVER_NAME = str(streamlit.session_state.data["moodleId"]) + "-" + SERVER_NAME
         FLAVOR_NAME = flavours[instanceRam]
-        NETWORK_NAME = "internal"
 
         image = conn.compute.find_image(IMAGE_NAME)
         flavor = conn.compute.find_flavor(FLAVOR_NAME)
-        network = conn.network.find_network(NETWORK_NAME)
+        internalNetwork = conn.network.find_network("test")
+        externalNetwork = conn.network.find_network("external")
 
         if backend.user.createInstance(SERVER_NAME, ram[instanceRam], IMAGE_NAME):
 
             server = conn.compute.create_server(
                 name=SERVER_NAME, image_id=image.id, flavor_id=flavor.id,
-                networks=[{"uuid": network.id}], key_name=str(streamlit.session_state.data["moodleId"]), auto_ip=True)
+                networks=[{"uuid": internalNetwork.id},{"uuid": externalNetwork.id}], key_name=str(streamlit.session_state.data["moodleId"]), auto_ip=True)
 
             server = conn.compute.wait_for_server(server)
             conn.add_auto_ip(server)

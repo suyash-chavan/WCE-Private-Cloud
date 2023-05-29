@@ -3,6 +3,9 @@ import streamlit
 import ui.components.header
 import ui.components.footer
 import ui.components.compute
+import ui.components.premium
+import ui.components.developers
+import ui.components.contact
 import backend.user
 import database.models
 import ui.admin
@@ -21,16 +24,14 @@ def userDashboard():
             unsafe_allow_html=True,
         )
 
-        streamlit.session_state.main_option = option_menu("", ["Compute", 
-        # "Public API", 
+        streamlit.session_state.main_option = option_menu("", ["Compute",
         "Premium", 
         "Contact", 
         "Policy", 
         "Developers", 
         "Documentation"], 
         
-        icons=['cloud', 
-        # 'gear',
+        icons=['cloud',
         'star',
         'phone', 
         'pen', 
@@ -40,6 +41,13 @@ def userDashboard():
 
     if streamlit.session_state.main_option == "Compute":
         ui.components.compute.computeDashboard()
+    elif streamlit.session_state.main_option == "Premium":
+        ui.components.premium.premiumDashboard()
+    elif streamlit.session_state.main_option == "Developers":
+        ui.components.developers.developersDashboard()
+    elif streamlit.session_state.main_option == "Contact":
+        ui.components.contact.contactDashboard()
+
 
 def dashboard():
     ui.components.header.header()
